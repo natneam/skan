@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	"skan/cli"
+
+	"natneam.com/skan/cli"
 )
 
 func main() {

@@ -1,4 +1,4 @@
-module skan
+module natneam.com/skan
 
 go 1.26.4
 
