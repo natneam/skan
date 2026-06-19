@@ -1,7 +1,12 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"skan/cli"
+)
 
 func main() {
-	fmt.Println("Hello, World!")
+	if err := cli.Run(); err != nil {
+		fmt.Println(err)
+	}
 }
