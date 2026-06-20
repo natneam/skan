@@ -11,7 +11,7 @@ import (
 	"sync"
 )
 
-func Searcher(query string, directories ...string) error {
+func Searcher(args SearcherArgs) error {
 	output := make(chan Match)
 	jobs := make(chan string, 100)
 
@@ -23,16 +23,22 @@ func Searcher(query string, directories ...string) error {
 		go func() {
 			defer workerWg.Done()
 			for path := range jobs {
-				find(query, path, output)
+				find(FindArgs{
+					Query:           args.Query,
+					CaseInsensitive: args.CaseInsensitive,
+					Invert:          args.Invert,
+					File:            path,
+					Output:          output,
+				})
 			}
 		}()
 	}
 
-	for _, dir := range directories {
+	for _, dir := range args.Directories {
 		walkerWg.Add(1)
 		go func() {
 			defer walkerWg.Done()
-			Traverse(dir, jobs)
+			traverse(dir, jobs)
 		}()
 	}
 
@@ -51,7 +57,7 @@ func Searcher(query string, directories ...string) error {
 	return nil
 }
 
-func Traverse(directory string, jobs chan string) error {
+func traverse(directory string, jobs chan string) error {
 	return filepath.WalkDir(directory, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -65,8 +71,8 @@ func Traverse(directory string, jobs chan string) error {
 	})
 }
 
-func find(query string, file string, output chan Match) error {
-	f, err := os.Open(file)
+func find(args FindArgs) error {
+	f, err := os.Open(args.File)
 	if err != nil {
 		return err
 	}
@@ -78,9 +84,19 @@ func find(query string, file string, output chan Match) error {
 	lineNumber := 1
 
 	for scanner.Scan() {
-		line := scanner.Bytes()
-		if bytes.Contains(line, []byte(query)) {
-			output <- Match{FileName: file, LineNumber: lineNumber, LineText: string(line)}
+		originalLine := scanner.Bytes()
+		line := originalLine
+		query := []byte(args.Query)
+
+		if args.CaseInsensitive {
+			line = bytes.ToLower(line)
+			query = bytes.ToLower(query)
+		}
+
+		if args.Invert && !bytes.Contains(line, query) {
+			args.Output <- Match{FileName: args.File, LineNumber: lineNumber, LineText: string(originalLine)}
+		} else if !args.Invert && bytes.Contains(line, query) {
+			args.Output <- Match{FileName: args.File, LineNumber: lineNumber, LineText: string(originalLine)}
 		}
 		lineNumber++
 	}

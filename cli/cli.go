@@ -13,6 +13,8 @@ import (
 func Run() error {
 	var searchString string
 	var directories []string
+	var caseInsensitive bool
+	var invertResults bool
 
 	cmd := &cli.Command{
 		Name:      "skan",
@@ -21,10 +23,20 @@ func Run() error {
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        "query",
-				Usage:       "string to search for",
+				Usage:       "String to search for",
 				Aliases:     []string{"q"},
 				Required:    true,
 				Destination: &searchString,
+			},
+			&cli.BoolFlag{
+				Name:        "i",
+				Usage:       "Case insensitive search",
+				Destination: &caseInsensitive,
+			},
+			&cli.BoolFlag{
+				Name:        "v",
+				Usage:       "Invert search results",
+				Destination: &invertResults,
 			},
 		},
 		Arguments: []cli.Argument{
@@ -39,7 +51,12 @@ func Run() error {
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			fmt.Printf("Initializing skan for query: %q inside [%s]...\n", searchString, strings.Join(directories, ", "))
 			fmt.Println("====================================== Result ======================================")
-			return core.Searcher(searchString, directories...)
+			return core.Searcher(core.SearcherArgs{
+				Query:           searchString,
+				CaseInsensitive: caseInsensitive,
+				Invert:          invertResults,
+				Directories:     directories,
+			})
 		},
 	}
 
