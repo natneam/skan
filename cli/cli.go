@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/urfave/cli/v3"
+	"natneam.com/skan/core"
 )
 
 func Run() error {
@@ -37,7 +38,8 @@ func Run() error {
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			fmt.Printf("Initializing skan for query: %q inside [%s]...\n", searchString, strings.Join(directories, ", "))
-			return nil
+			fmt.Println("====================================== Result ======================================")
+			return core.Searcher(searchString, directories...)
 		},
 	}
 
