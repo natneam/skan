@@ -2,11 +2,12 @@ package core
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
+	"runtime"
 	"sync"
 )
 
@@ -17,7 +18,7 @@ func Searcher(query string, directories ...string) error {
 	var walkerWg sync.WaitGroup
 	var workerWg sync.WaitGroup
 
-	for range 10 {
+	for range runtime.NumCPU() {
 		workerWg.Add(1)
 		go func() {
 			defer workerWg.Done()
@@ -77,9 +78,9 @@ func find(query string, file string, output chan Match) error {
 	lineNumber := 1
 
 	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.Contains(line, query) {
-			output <- Match{FileName: file, LineNumber: lineNumber, LineText: line}
+		line := scanner.Bytes()
+		if bytes.Contains(line, []byte(query)) {
+			output <- Match{FileName: file, LineNumber: lineNumber, LineText: string(line)}
 		}
 		lineNumber++
 	}
