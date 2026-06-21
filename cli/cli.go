@@ -16,6 +16,7 @@ func Run() error {
 	var caseInsensitive bool
 	var invertResults bool
 	var regexpSearch bool
+	var wholeWordsOnly bool
 
 	cmd := &cli.Command{
 		Name:        "skan",
@@ -45,6 +46,11 @@ func Run() error {
 				Usage:       "Treat the query as a regular expression instead of a literal string",
 				Destination: &regexpSearch,
 			},
+			&cli.BoolFlag{
+				Name:        "w",
+				Usage:       "Match whole words only (e.g. \"cat\" matches \"cat\" but not \"cats\" or \"location\")",
+				Destination: &wholeWordsOnly,
+			},
 		},
 		Arguments: []cli.Argument{
 			&cli.StringArgs{
@@ -63,6 +69,7 @@ func Run() error {
 				CaseInsensitive: caseInsensitive,
 				Invert:          invertResults,
 				Regex:           regexpSearch,
+				WholeWordsOnly:  wholeWordsOnly,
 				Directories:     directories,
 			})
 		},

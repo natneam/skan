@@ -13,6 +13,7 @@ type SearcherArgs struct {
 	Invert          bool
 	CaseInsensitive bool
 	Regex           bool
+	WholeWordsOnly  bool
 	Directories     []string
 }
 
@@ -21,6 +22,7 @@ type FindArgs struct {
 	CaseInsensitive bool
 	Invert          bool
 	Regex           bool
+	WholeWordsOnly  bool
 	File            string
 	Output          chan Match
 }

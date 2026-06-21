@@ -15,6 +15,7 @@ GLOBAL OPTIONS:
    -i                         Perform a case-insensitive match (e.g. "Foo" matches "foo", "FOO")
    -v                         Invert results — print lines that do NOT contain the query
    -r                         Treat the query as a regular expression instead of a literal string
+   -w                         Match whole words only (e.g. "cat" matches "cat" but not "cats" or "location")
    --help, -h                 Show this help message
 
 EXAMPLES:
