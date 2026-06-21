@@ -15,6 +15,7 @@ func Run() error {
 	var directories []string
 	var caseInsensitive bool
 	var invertResults bool
+	var regexpSearch bool
 
 	cmd := &cli.Command{
 		Name:      "skan",
@@ -38,6 +39,11 @@ func Run() error {
 				Usage:       "Invert search results",
 				Destination: &invertResults,
 			},
+			&cli.BoolFlag{
+				Name:        "r",
+				Usage:       "Regular expression search",
+				Destination: &regexpSearch,
+			},
 		},
 		Arguments: []cli.Argument{
 			&cli.StringArgs{
@@ -55,6 +61,7 @@ func Run() error {
 				Query:           searchString,
 				CaseInsensitive: caseInsensitive,
 				Invert:          invertResults,
+				Regex:           regexpSearch,
 				Directories:     directories,
 			})
 		},

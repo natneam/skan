@@ -24,6 +24,7 @@ func Searcher(args SearcherArgs) error {
 					Query:           args.Query,
 					CaseInsensitive: args.CaseInsensitive,
 					Invert:          args.Invert,
+					Regex:           args.Regex,
 					File:            path,
 					Output:          output,
 				})
