@@ -26,9 +26,7 @@ type FindArgs struct {
 }
 
 type LineContext struct {
-	OriginalLine []byte
-	CurrentLine  []byte
-	Query        []byte
-	Regexp       *regexp.Regexp
-	Args         FindArgs
+	CurrentLine []byte
+	Regexp      *regexp.Regexp
+	Args        FindArgs
 }
