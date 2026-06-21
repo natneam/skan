@@ -18,30 +18,31 @@ func Run() error {
 	var regexpSearch bool
 
 	cmd := &cli.Command{
-		Name:      "skan",
-		Usage:     "Scan for a string in a directory",
-		UsageText: "skan [options] DIRECTORIES...",
+		Name:        "skan",
+		Usage:       "A fast, parallel file scanner for searching strings and patterns across directories",
+		UsageText:   "skan [options] DIRECTORIES...",
+		Description: "skan recursively walks one or more directories and searches every file for a\nquery string, printing each match with its file path and line number. Scanning \nis parallelized across all available CPU cores for speed.",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        "query",
-				Usage:       "String to search for",
+				Usage:       "The string (or pattern) to search for in file contents (required)",
 				Aliases:     []string{"q"},
 				Required:    true,
 				Destination: &searchString,
 			},
 			&cli.BoolFlag{
 				Name:        "i",
-				Usage:       "Case insensitive search",
+				Usage:       "Perform a case-insensitive match (e.g. \"Foo\" matches \"foo\", \"FOO\")",
 				Destination: &caseInsensitive,
 			},
 			&cli.BoolFlag{
 				Name:        "v",
-				Usage:       "Invert search results",
+				Usage:       "Invert results — print lines that do NOT contain the query",
 				Destination: &invertResults,
 			},
 			&cli.BoolFlag{
 				Name:        "r",
-				Usage:       "Regular expression search",
+				Usage:       "Treat the query as a regular expression instead of a literal string",
 				Destination: &regexpSearch,
 			},
 		},
