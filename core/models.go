@@ -20,3 +20,10 @@ type FindArgs struct {
 	File            string
 	Output          chan Match
 }
+
+type LineContext struct {
+	OriginalLine []byte
+	CurrentLine  []byte
+	Query        []byte
+	Args         FindArgs
+}

@@ -1,11 +1,8 @@
 package core
 
 import (
-	"bufio"
-	"bytes"
 	"fmt"
 	"io/fs"
-	"os"
 	"path/filepath"
 	"runtime"
 	"sync"
@@ -23,7 +20,7 @@ func Searcher(args SearcherArgs) error {
 		go func() {
 			defer workerWg.Done()
 			for path := range jobs {
-				find(FindArgs{
+				Find(FindArgs{
 					Query:           args.Query,
 					CaseInsensitive: args.CaseInsensitive,
 					Invert:          args.Invert,
@@ -69,41 +66,4 @@ func traverse(directory string, jobs chan string) error {
 
 		return nil
 	})
-}
-
-func find(args FindArgs) error {
-	f, err := os.Open(args.File)
-	if err != nil {
-		return err
-	}
-
-	defer f.Close()
-
-	scanner := bufio.NewScanner(f)
-
-	lineNumber := 1
-
-	for scanner.Scan() {
-		originalLine := scanner.Bytes()
-		line := originalLine
-		query := []byte(args.Query)
-
-		if args.CaseInsensitive {
-			line = bytes.ToLower(line)
-			query = bytes.ToLower(query)
-		}
-
-		if args.Invert && !bytes.Contains(line, query) {
-			args.Output <- Match{FileName: args.File, LineNumber: lineNumber, LineText: string(originalLine)}
-		} else if !args.Invert && bytes.Contains(line, query) {
-			args.Output <- Match{FileName: args.File, LineNumber: lineNumber, LineText: string(originalLine)}
-		}
-		lineNumber++
-	}
-
-	if scanner.Err() != nil {
-		return scanner.Err()
-	}
-
-	return nil
 }
