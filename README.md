@@ -16,6 +16,9 @@ GLOBAL OPTIONS:
    -v                         Invert results — print lines that do NOT contain the query
    -r                         Treat the query as a regular expression instead of a literal string
    -w                         Match whole words only (e.g. "cat" matches "cat" but not "cats" or "location")
+   -B int                     Print N lines of leading context before matching lines (default: 0)
+   -A int                     Print N lines of trailing context after matching lines (default: 0)
+   -C int                     Print N lines of context before and after matching lines (default: 0)
    --help, -h                 Show this help message
 
 EXAMPLES:
