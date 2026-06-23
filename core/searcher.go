@@ -15,6 +15,17 @@ func Searcher(args SearcherArgs) error {
 	var walkerWg sync.WaitGroup
 	var workerWg sync.WaitGroup
 
+	if args.ContextLines.Context == -1 {
+		args.ContextLines.Context = 0
+	}
+
+	if args.ContextLines.Before == -1 {
+		args.ContextLines.Before = args.ContextLines.Context
+	}
+	if args.ContextLines.After == -1 {
+		args.ContextLines.After = args.ContextLines.Context
+	}
+
 	for range runtime.NumCPU() {
 		workerWg.Add(1)
 		go func() {
@@ -26,6 +37,7 @@ func Searcher(args SearcherArgs) error {
 					Invert:          args.Invert,
 					Regex:           args.Regex,
 					WholeWordsOnly:  args.WholeWordsOnly,
+					ContextLines:    args.ContextLines,
 					File:            path,
 					Output:          output,
 				})
@@ -49,8 +61,14 @@ func Searcher(args SearcherArgs) error {
 	}()
 
 	for res := range output {
-		fmt.Println(res.FileName, ": ", res.LineNumber)
-		fmt.Println("  ", res.LineText)
+		for _, bC := range res.BeforeContext {
+			fmt.Printf("%s-%d-%s\n", bC.FileName, bC.LineNumber, bC.LineText)
+		}
+		fmt.Printf("%s:%d:%s\n", res.FileName, res.LineNumber, res.LineText)
+		for _, aC := range res.AfterContext {
+			fmt.Printf("%s-%d-%s\n", aC.FileName, aC.LineNumber, aC.LineText)
+		}
+		fmt.Println("---")
 	}
 
 	return nil

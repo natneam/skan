@@ -31,6 +31,12 @@ func Find(args FindArgs) error {
 
 	query := []byte(args.Query)
 
+	// Buffering Variables
+	var beforeBuffer []ContextLine
+
+	// Matched Lines
+	var matchedLines []Match
+
 	// Preprocess the Query
 	if !args.Regex {
 		query = []byte(regexp.QuoteMeta(string(query)))
@@ -56,10 +62,42 @@ func Find(args FindArgs) error {
 		}
 
 		if regexHandler(lineContext) {
-			args.Output <- Match{FileName: args.File, LineNumber: lineNumber, LineText: string(lineContext.CurrentLine)}
+
+			matchedLines = append(matchedLines, Match{FileName: args.File, LineNumber: lineNumber, LineText: string(lineContext.CurrentLine), BeforeContext: append([]ContextLine{}, beforeBuffer...)})
+
+			// reset buffers
+			beforeBuffer = nil
+
+		} else {
+			lineText := string(lineContext.CurrentLine)
+			remove := 0
+
+			for i := range matchedLines {
+				if len(matchedLines[i].AfterContext) < args.ContextLines.After {
+					matchedLines[i].AfterContext = append(matchedLines[i].AfterContext, ContextLine{FileName: args.File, LineNumber: lineNumber, LineText: lineText})
+				}
+
+				if len(matchedLines[i].AfterContext) == args.ContextLines.After {
+					args.Output <- matchedLines[i]
+					remove++
+				}
+			}
+
+			matchedLines = matchedLines[remove:]
+
+			// Record before context
+			beforeBuffer = append(beforeBuffer, ContextLine{FileName: args.File, LineNumber: lineNumber, LineText: lineText})
+			if len(beforeBuffer) > args.ContextLines.Before {
+				beforeBuffer = beforeBuffer[1:]
+			}
 		}
 
 		lineNumber++
+	}
+
+	// flush out the matched lines one last time
+	for _, m := range matchedLines {
+		args.Output <- m
 	}
 
 	if scanner.Err() != nil {

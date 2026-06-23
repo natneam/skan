@@ -17,6 +17,7 @@ func Run() error {
 	var invertResults bool
 	var regexpSearch bool
 	var wholeWordsOnly bool
+	var contextLinesInput core.ContextLineBuffer
 
 	cmd := &cli.Command{
 		Name:        "skan",
@@ -51,6 +52,27 @@ func Run() error {
 				Usage:       "Match whole words only (e.g. \"cat\" matches \"cat\" but not \"cats\" or \"location\")",
 				Destination: &wholeWordsOnly,
 			},
+			&cli.IntFlag{
+				Name:        "B",
+				Usage:       "Print N lines of leading context before matching lines",
+				DefaultText: "0",
+				Value:       -1,
+				Destination: &contextLinesInput.Before,
+			},
+			&cli.IntFlag{
+				Name:        "A",
+				Usage:       "Print N lines of trailing context after matching lines",
+				DefaultText: "0",
+				Value:       -1,
+				Destination: &contextLinesInput.After,
+			},
+			&cli.IntFlag{
+				Name:        "C",
+				Usage:       "Print N lines of context before and after matching lines",
+				DefaultText: "0",
+				Value:       -1,
+				Destination: &contextLinesInput.Context,
+			},
 		},
 		Arguments: []cli.Argument{
 			&cli.StringArgs{
@@ -64,12 +86,14 @@ func Run() error {
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			fmt.Printf("Initializing skan for query: %q inside [%s]...\n", searchString, strings.Join(directories, ", "))
 			fmt.Println("====================================== Result ======================================")
+
 			return core.Searcher(core.SearcherArgs{
 				Query:           searchString,
 				CaseInsensitive: caseInsensitive,
 				Invert:          invertResults,
 				Regex:           regexpSearch,
 				WholeWordsOnly:  wholeWordsOnly,
+				ContextLines:    contextLinesInput,
 				Directories:     directories,
 			})
 		},
