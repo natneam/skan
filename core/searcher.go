@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"io/fs"
 	"path/filepath"
 	"runtime"
@@ -9,7 +8,7 @@ import (
 )
 
 func Searcher(args SearcherArgs) error {
-	output := make(chan Match)
+	output := make(chan Match, 100)
 	jobs := make(chan string, 100)
 
 	var walkerWg sync.WaitGroup
@@ -32,14 +31,16 @@ func Searcher(args SearcherArgs) error {
 			defer workerWg.Done()
 			for path := range jobs {
 				Find(FindArgs{
-					Query:           args.Query,
-					CaseInsensitive: args.CaseInsensitive,
-					Invert:          args.Invert,
-					Regex:           args.Regex,
-					WholeWordsOnly:  args.WholeWordsOnly,
-					ContextLines:    args.ContextLines,
-					File:            path,
-					Output:          output,
+					SearchOptions: SearchOptions{
+						Query:           args.Query,
+						CaseInsensitive: args.CaseInsensitive,
+						Invert:          args.Invert,
+						Regex:           args.Regex,
+						WholeWordsOnly:  args.WholeWordsOnly,
+						ContextLines:    ContextLineBuffer{Before: args.ContextLines.Before, After: args.ContextLines.After},
+					},
+					File:   path,
+					Output: output,
 				})
 			}
 		}()
@@ -59,17 +60,6 @@ func Searcher(args SearcherArgs) error {
 		workerWg.Wait()
 		close(output)
 	}()
-
-	for res := range output {
-		for _, bC := range res.BeforeContext {
-			fmt.Printf("%s-%d-%s\n", bC.FileName, bC.LineNumber, bC.LineText)
-		}
-		fmt.Printf("%s:%d:%s\n", res.FileName, res.LineNumber, res.LineText)
-		for _, aC := range res.AfterContext {
-			fmt.Printf("%s-%d-%s\n", aC.FileName, aC.LineNumber, aC.LineText)
-		}
-		fmt.Println("---")
-	}
 
 	return nil
 }

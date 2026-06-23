@@ -87,15 +87,33 @@ func Run() error {
 			fmt.Printf("Initializing skan for query: %q inside [%s]...\n", searchString, strings.Join(directories, ", "))
 			fmt.Println("====================================== Result ======================================")
 
-			return core.Searcher(core.SearcherArgs{
-				Query:           searchString,
-				CaseInsensitive: caseInsensitive,
-				Invert:          invertResults,
-				Regex:           regexpSearch,
-				WholeWordsOnly:  wholeWordsOnly,
-				ContextLines:    contextLinesInput,
-				Directories:     directories,
+			output, err := core.Searcher(core.SearcherArgs{
+				SearchOptions: core.SearchOptions{
+					Query:           searchString,
+					CaseInsensitive: caseInsensitive,
+					Invert:          invertResults,
+					Regex:           regexpSearch,
+					WholeWordsOnly:  wholeWordsOnly,
+					ContextLines:    contextLinesInput,
+				},
+				Directories: directories,
 			})
+
+			if err != nil {
+				return err
+			}
+
+			for res := range output {
+				for _, bC := range res.BeforeContext {
+					fmt.Printf("%s-%d-%s\n", bC.FileName, bC.LineNumber, bC.LineText)
+				}
+				fmt.Printf("%s:%d:%s\n", res.FileName, res.LineNumber, res.LineText)
+				for _, aC := range res.AfterContext {
+					fmt.Printf("%s-%d-%s\n", aC.FileName, aC.LineNumber, aC.LineText)
+				}
+				fmt.Println("---")
+			}
+			return nil
 		},
 	}
 

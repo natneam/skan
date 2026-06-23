@@ -16,25 +16,24 @@ type ContextLine struct {
 	LineText   string
 }
 
-type SearcherArgs struct {
-	Query           string
-	Invert          bool
+type SearchOptions struct {
 	CaseInsensitive bool
+	ContextLines    ContextLineBuffer
+	Invert          bool
+	Query           string
 	Regex           bool
 	WholeWordsOnly  bool
-	ContextLines    ContextLineBuffer
-	Directories     []string
+}
+
+type SearcherArgs struct {
+	SearchOptions
+	Directories []string
 }
 
 type FindArgs struct {
-	Query           string
-	CaseInsensitive bool
-	Invert          bool
-	Regex           bool
-	WholeWordsOnly  bool
-	ContextLines    ContextLineBuffer
-	File            string
-	Output          chan Match
+	SearchOptions
+	File   string
+	Output chan Match
 }
 
 type LineContext struct {
