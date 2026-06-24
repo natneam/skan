@@ -6,11 +6,12 @@ import (
 	"runtime"
 	"sync"
 
+	"natneam.com/skan/model"
 	"natneam.com/skan/utils"
 )
 
-func Searcher(args SearcherArgs) (chan Match, error) {
-	output := make(chan Match, 100)
+func Searcher(args model.SearcherArgs) (chan model.Match, error) {
+	output := make(chan model.Match, 100)
 	jobs := make(chan string, 100)
 
 	var walkerWg sync.WaitGroup
@@ -32,14 +33,14 @@ func Searcher(args SearcherArgs) (chan Match, error) {
 		go func() {
 			defer workerWg.Done()
 			for path := range jobs {
-				Find(FindArgs{
-					SearchOptions: SearchOptions{
+				Find(model.FindArgs{
+					SearchOptions: model.SearchOptions{
 						Query:           args.Query,
 						CaseInsensitive: args.CaseInsensitive,
 						Invert:          args.Invert,
 						Regex:           args.Regex,
 						WholeWordsOnly:  args.WholeWordsOnly,
-						ContextLines:    ContextLineBuffer{Before: args.ContextLines.Before, After: args.ContextLines.After},
+						ContextLines:    model.ContextLineBuffer{Before: args.ContextLines.Before, After: args.ContextLines.After},
 					},
 					File:   path,
 					Output: output,
@@ -76,7 +77,7 @@ func traverse(directory string, jobs chan string) error {
 			// read the first 512 bytes to see if it's a binary file, if so discard it
 			binary, err := utils.IsBinary(path)
 			if err != nil || binary {
-				return filepath.SkipDir
+				return nil
 			}
 
 			jobs <- path

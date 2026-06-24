@@ -1,20 +1,20 @@
-package core
+package model
 
 import "regexp"
 
 type Match struct {
-	FileName      string
-	LineNumber    int
-	LineText      string
-	BeforeContext []ContextLine
-	AfterContext  []ContextLine
-	MatchIndexes  [][]int
+	FileName      string        `json:"file_name"`
+	LineNumber    int           `json:"line_number"`
+	LineText      string        `json:"line_text"`
+	BeforeContext []ContextLine `json:"before_context"`
+	AfterContext  []ContextLine `json:"after_context"`
+	MatchIndexes  [][]int       `json:"-"`
 }
 
 type ContextLine struct {
-	FileName   string
-	LineNumber int
-	LineText   string
+	FileName   string `json:"-"`
+	LineNumber int    `json:"line_number"`
+	LineText   string `json:"line_text"`
 }
 
 type SearchOptions struct {
@@ -41,7 +41,6 @@ type LineContext struct {
 	CurrentLine []byte
 	Regexp      *regexp.Regexp
 	Args        FindArgs
-	LineNumber  int
 }
 
 type ContextLineBuffer struct {

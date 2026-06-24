@@ -5,9 +5,11 @@ import (
 	"bytes"
 	"os"
 	"regexp"
+
+	"natneam.com/skan/model"
 )
 
-func regexHandler(ctx *LineContext) (bool, [][]int) {
+func regexHandler(ctx *model.LineContext) (bool, [][]int) {
 	contains := ctx.Regexp.Match(ctx.CurrentLine)
 	var matchIndexes [][]int
 
@@ -26,7 +28,7 @@ func regexHandler(ctx *LineContext) (bool, [][]int) {
 	return true, matchIndexes
 }
 
-func Find(args FindArgs) error {
+func Find(args model.FindArgs) error {
 	f, err := os.Open(args.File)
 	if err != nil {
 		return err
@@ -37,10 +39,10 @@ func Find(args FindArgs) error {
 	query := []byte(args.Query)
 
 	// Buffering Variables
-	var beforeBuffer []ContextLine
+	var beforeBuffer []model.ContextLine
 
 	// Matched Lines
-	var matchedLines []Match
+	var matchedLines []model.Match
 
 	// Preprocess the Query
 	if !args.Regex {
@@ -60,7 +62,7 @@ func Find(args FindArgs) error {
 
 	for scanner.Scan() {
 		line := scanner.Bytes()
-		lineContext := &LineContext{
+		lineContext := &model.LineContext{
 			CurrentLine: bytes.Clone(line),
 			Regexp:      regex,
 			Args:        args,
@@ -69,7 +71,7 @@ func Find(args FindArgs) error {
 		match, matchIndexes := regexHandler(lineContext)
 		if match {
 
-			matchedLines = append(matchedLines, Match{FileName: args.File, LineNumber: lineNumber, LineText: string(lineContext.CurrentLine), BeforeContext: append([]ContextLine{}, beforeBuffer...), MatchIndexes: matchIndexes})
+			matchedLines = append(matchedLines, model.Match{FileName: args.File, LineNumber: lineNumber, LineText: string(lineContext.CurrentLine), BeforeContext: append([]model.ContextLine{}, beforeBuffer...), MatchIndexes: matchIndexes})
 
 			// reset buffers
 			beforeBuffer = nil
@@ -80,7 +82,7 @@ func Find(args FindArgs) error {
 
 			for i := range matchedLines {
 				if len(matchedLines[i].AfterContext) < args.ContextLines.After {
-					matchedLines[i].AfterContext = append(matchedLines[i].AfterContext, ContextLine{FileName: args.File, LineNumber: lineNumber, LineText: lineText})
+					matchedLines[i].AfterContext = append(matchedLines[i].AfterContext, model.ContextLine{FileName: args.File, LineNumber: lineNumber, LineText: lineText})
 				}
 
 				if len(matchedLines[i].AfterContext) == args.ContextLines.After {
@@ -92,7 +94,7 @@ func Find(args FindArgs) error {
 			matchedLines = matchedLines[remove:]
 
 			// Record before context
-			beforeBuffer = append(beforeBuffer, ContextLine{FileName: args.File, LineNumber: lineNumber, LineText: lineText})
+			beforeBuffer = append(beforeBuffer, model.ContextLine{FileName: args.File, LineNumber: lineNumber, LineText: lineText})
 			if len(beforeBuffer) > args.ContextLines.Before {
 				beforeBuffer = beforeBuffer[1:]
 			}

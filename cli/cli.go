@@ -2,13 +2,12 @@ package cli
 
 import (
 	"context"
-	"fmt"
 	"os"
-	"strings"
 
 	"github.com/urfave/cli/v3"
+	"natneam.com/skan/cli/output"
 	"natneam.com/skan/core"
-	"natneam.com/skan/utils"
+	"natneam.com/skan/model"
 )
 
 func Run() error {
@@ -18,7 +17,9 @@ func Run() error {
 	var invertResults bool
 	var regexpSearch bool
 	var wholeWordsOnly bool
-	var contextLinesInput core.ContextLineBuffer
+	var contextLinesInput model.ContextLineBuffer
+	var colorOutput bool
+	var jsonOutput bool
 
 	cmd := &cli.Command{
 		Name:        "skan",
@@ -74,6 +75,16 @@ func Run() error {
 				Value:       -1,
 				Destination: &contextLinesInput.Context,
 			},
+			&cli.BoolFlag{
+				Name:        "color",
+				Usage:       "Colorize matching text in text output, doesn't affect JSON output",
+				Destination: &colorOutput,
+			},
+			&cli.BoolFlag{
+				Name:        "json",
+				Usage:       "Output results as newline-delimited JSON (one JSON object per match)",
+				Destination: &jsonOutput,
+			},
 		},
 		Arguments: []cli.Argument{
 			&cli.StringArgs{
@@ -85,11 +96,8 @@ func Run() error {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			fmt.Printf("Initializing skan for query: %q inside [%s]...\n", searchString, strings.Join(directories, ", "))
-			fmt.Println("====================================== Result ======================================")
-
-			output, err := core.Searcher(core.SearcherArgs{
-				SearchOptions: core.SearchOptions{
+			outputData, err := core.Searcher(model.SearcherArgs{
+				SearchOptions: model.SearchOptions{
 					Query:           searchString,
 					CaseInsensitive: caseInsensitive,
 					Invert:          invertResults,
@@ -103,23 +111,10 @@ func Run() error {
 			if err != nil {
 				return err
 			}
-			useColor := utils.IsTTY()
-
-			for res := range output {
-				for _, bC := range res.BeforeContext {
-					fmt.Printf("%s-%d-%s\n", bC.FileName, bC.LineNumber, bC.LineText)
-				}
-
-				line := res.LineText
-				if useColor {
-					line = utils.HighlightLine(res.LineText, res.MatchIndexes)
-				}
-
-				fmt.Printf("%s:%d:%s\n", res.FileName, res.LineNumber, line)
-				for _, aC := range res.AfterContext {
-					fmt.Printf("%s-%d-%s\n", aC.FileName, aC.LineNumber, aC.LineText)
-				}
-				fmt.Println("---")
+			if jsonOutput {
+				output.EmitJSON(outputData)
+			} else {
+				output.EmitText(outputData, colorOutput)
 			}
 			return nil
 		},
