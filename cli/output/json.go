@@ -10,7 +10,7 @@ import (
 
 func EmitJSON(data chan model.Match) {
 	for res := range data {
-		s, err := json.MarshalIndent(res, "", "  ")
+		s, err := json.Marshal(res)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			continue
