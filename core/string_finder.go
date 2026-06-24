@@ -4,17 +4,16 @@ import (
 	"bufio"
 	"bytes"
 	"os"
-	"regexp"
 
 	"natneam.com/skan/model"
 )
 
 func regexHandler(ctx *model.LineContext) (bool, [][]int) {
-	contains := ctx.Regexp.Match(ctx.CurrentLine)
+	contains := ctx.Args.Regexp.Match(ctx.CurrentLine)
 	var matchIndexes [][]int
 
 	if !ctx.Args.Invert {
-		matchIndexes = ctx.Regexp.FindAllIndex(ctx.CurrentLine, -1)
+		matchIndexes = ctx.Args.Regexp.FindAllIndex(ctx.CurrentLine, -1)
 	}
 
 	if ctx.Args.Invert {
@@ -36,25 +35,11 @@ func Find(args model.FindArgs) error {
 
 	defer f.Close()
 
-	query := []byte(args.Query)
-
 	// Buffering Variables
 	var beforeBuffer []model.ContextLine
 
 	// Matched Lines
 	var matchedLines []model.Match
-
-	// Preprocess the Query
-	if !args.Regex {
-		query = []byte(regexp.QuoteMeta(string(query)))
-	}
-	if args.WholeWordsOnly {
-		query = []byte("\\b" + string(query) + "\\b")
-	}
-	if args.CaseInsensitive {
-		query = []byte("(?i)" + string(query))
-	}
-	regex, _ := regexp.Compile(string(query))
 
 	// Read line by line and match
 	scanner := bufio.NewScanner(f)
@@ -64,7 +49,6 @@ func Find(args model.FindArgs) error {
 		line := scanner.Bytes()
 		lineContext := &model.LineContext{
 			CurrentLine: bytes.Clone(line),
-			Regexp:      regex,
 			Args:        args,
 		}
 

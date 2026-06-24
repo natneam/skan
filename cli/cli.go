@@ -97,20 +97,19 @@ func Run() error {
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			outputData, err := core.Searcher(model.SearcherArgs{
-				SearchOptions: model.SearchOptions{
-					Query:           searchString,
-					CaseInsensitive: caseInsensitive,
-					Invert:          invertResults,
-					Regex:           regexpSearch,
-					WholeWordsOnly:  wholeWordsOnly,
-					ContextLines:    contextLinesInput,
-				},
-				Directories: directories,
+				Query:           searchString,
+				CaseInsensitive: caseInsensitive,
+				Invert:          invertResults,
+				Regex:           regexpSearch,
+				WholeWordsOnly:  wholeWordsOnly,
+				ContextLines:    contextLinesInput,
+				Directories:     directories,
 			})
 
 			if err != nil {
 				return err
 			}
+
 			if jsonOutput {
 				output.EmitJSON(outputData)
 			} else {

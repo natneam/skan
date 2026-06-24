@@ -3,6 +3,7 @@ package core
 import (
 	"io/fs"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"sync"
 
@@ -28,22 +29,34 @@ func Searcher(args model.SearcherArgs) (chan model.Match, error) {
 		args.ContextLines.After = args.ContextLines.Context
 	}
 
+	query := []byte(args.Query)
+
+	// Preprocess the Query
+	if !args.Regex {
+		query = []byte(regexp.QuoteMeta(string(query)))
+	}
+	if args.WholeWordsOnly {
+		query = []byte("\\b" + string(query) + "\\b")
+	}
+	if args.CaseInsensitive {
+		query = []byte("(?i)" + string(query))
+	}
+	regex, err := regexp.Compile(string(query))
+	if err != nil {
+		return nil, err
+	}
+
 	for range runtime.NumCPU() {
 		workerWg.Add(1)
 		go func() {
 			defer workerWg.Done()
 			for path := range jobs {
 				Find(model.FindArgs{
-					SearchOptions: model.SearchOptions{
-						Query:           args.Query,
-						CaseInsensitive: args.CaseInsensitive,
-						Invert:          args.Invert,
-						Regex:           args.Regex,
-						WholeWordsOnly:  args.WholeWordsOnly,
-						ContextLines:    model.ContextLineBuffer{Before: args.ContextLines.Before, After: args.ContextLines.After},
-					},
-					File:   path,
-					Output: output,
+					Invert:       args.Invert,
+					Regexp:       regex,
+					ContextLines: model.ContextLineBuffer{Before: args.ContextLines.Before, After: args.ContextLines.After},
+					File:         path,
+					Output:       output,
 				})
 			}
 		}()

@@ -17,29 +17,26 @@ type ContextLine struct {
 	LineText   string `json:"line_text"`
 }
 
-type SearchOptions struct {
+type SearcherArgs struct {
 	CaseInsensitive bool
 	ContextLines    ContextLineBuffer
 	Invert          bool
 	Query           string
 	Regex           bool
 	WholeWordsOnly  bool
-}
-
-type SearcherArgs struct {
-	SearchOptions
-	Directories []string
+	Directories     []string
 }
 
 type FindArgs struct {
-	SearchOptions
-	File   string
-	Output chan Match
+	ContextLines ContextLineBuffer
+	Invert       bool
+	File         string
+	Regexp       *regexp.Regexp
+	Output       chan Match
 }
 
 type LineContext struct {
 	CurrentLine []byte
-	Regexp      *regexp.Regexp
 	Args        FindArgs
 }
 
