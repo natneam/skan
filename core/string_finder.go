@@ -7,18 +7,23 @@ import (
 	"regexp"
 )
 
-func regexHandler(ctx *LineContext) bool {
+func regexHandler(ctx *LineContext) (bool, [][]int) {
 	contains := ctx.Regexp.Match(ctx.CurrentLine)
+	var matchIndexes [][]int
+
+	if !ctx.Args.Invert {
+		matchIndexes = ctx.Regexp.FindAllIndex(ctx.CurrentLine, -1)
+	}
 
 	if ctx.Args.Invert {
 		contains = !contains
 	}
 
 	if !contains {
-		return false
+		return false, matchIndexes
 	}
 
-	return true
+	return true, matchIndexes
 }
 
 func Find(args FindArgs) error {
@@ -61,9 +66,10 @@ func Find(args FindArgs) error {
 			Args:        args,
 		}
 
-		if regexHandler(lineContext) {
+		match, matchIndexes := regexHandler(lineContext)
+		if match {
 
-			matchedLines = append(matchedLines, Match{FileName: args.File, LineNumber: lineNumber, LineText: string(lineContext.CurrentLine), BeforeContext: append([]ContextLine{}, beforeBuffer...)})
+			matchedLines = append(matchedLines, Match{FileName: args.File, LineNumber: lineNumber, LineText: string(lineContext.CurrentLine), BeforeContext: append([]ContextLine{}, beforeBuffer...), MatchIndexes: matchIndexes})
 
 			// reset buffers
 			beforeBuffer = nil

@@ -8,6 +8,7 @@ import (
 
 	"github.com/urfave/cli/v3"
 	"natneam.com/skan/core"
+	"natneam.com/skan/utils"
 )
 
 func Run() error {
@@ -102,12 +103,19 @@ func Run() error {
 			if err != nil {
 				return err
 			}
+			useColor := utils.IsTTY()
 
 			for res := range output {
 				for _, bC := range res.BeforeContext {
 					fmt.Printf("%s-%d-%s\n", bC.FileName, bC.LineNumber, bC.LineText)
 				}
-				fmt.Printf("%s:%d:%s\n", res.FileName, res.LineNumber, res.LineText)
+
+				line := res.LineText
+				if useColor {
+					line = utils.HighlightLine(res.LineText, res.MatchIndexes)
+				}
+
+				fmt.Printf("%s:%d:%s\n", res.FileName, res.LineNumber, line)
 				for _, aC := range res.AfterContext {
 					fmt.Printf("%s-%d-%s\n", aC.FileName, aC.LineNumber, aC.LineText)
 				}

@@ -8,6 +8,7 @@ type Match struct {
 	LineText      string
 	BeforeContext []ContextLine
 	AfterContext  []ContextLine
+	MatchIndexes  [][]int
 }
 
 type ContextLine struct {
