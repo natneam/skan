@@ -9,6 +9,8 @@ import (
 
 func EmitText(data chan model.Match, colorOutput bool) {
 	useColor := utils.IsTTY() && colorOutput
+	countMatches := 0
+	filesCount := make(map[string]bool)
 
 	for res := range data {
 		for _, bC := range res.BeforeContext {
@@ -25,5 +27,8 @@ func EmitText(data chan model.Match, colorOutput bool) {
 			fmt.Printf("%s-%d-%s\n", aC.FileName, aC.LineNumber, aC.LineText)
 		}
 		fmt.Println("---")
+		countMatches++
+		filesCount[res.FileName] = true
 	}
+	fmt.Printf("%d Matches across %d files\n", countMatches, len(filesCount))
 }
