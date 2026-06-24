@@ -5,9 +5,11 @@ import (
 	"path/filepath"
 	"runtime"
 	"sync"
+
+	"natneam.com/skan/utils"
 )
 
-func Searcher(args SearcherArgs) error {
+func Searcher(args SearcherArgs) (chan Match, error) {
 	output := make(chan Match, 100)
 	jobs := make(chan string, 100)
 
@@ -61,7 +63,7 @@ func Searcher(args SearcherArgs) error {
 		close(output)
 	}()
 
-	return nil
+	return output, nil
 }
 
 func traverse(directory string, jobs chan string) error {
@@ -71,6 +73,12 @@ func traverse(directory string, jobs chan string) error {
 		}
 
 		if !d.IsDir() {
+			// read the first 512 bytes to see if it's a binary file, if so discard it
+			binary, err := utils.IsBinary(path)
+			if err != nil || binary {
+				return filepath.SkipDir
+			}
+
 			jobs <- path
 		}
 
