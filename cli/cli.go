@@ -20,6 +20,7 @@ func Run() error {
 	var contextLinesInput model.ContextLineBuffer
 	var colorOutput bool
 	var jsonOutput bool
+	var countMode bool
 
 	cmd := &cli.Command{
 		Name:        "skan",
@@ -85,6 +86,12 @@ func Run() error {
 				Usage:       "Output results as newline-delimited JSON (one JSON object per match)",
 				Destination: &jsonOutput,
 			},
+			&cli.BoolFlag{
+				Name:        "count",
+				Aliases:     []string{"c"},
+				Usage:       "Output the number of matches instead of the matching lines",
+				Destination: &countMode,
+			},
 		},
 		Arguments: []cli.Argument{
 			&cli.StringArgs{
@@ -110,7 +117,9 @@ func Run() error {
 				return err
 			}
 
-			if jsonOutput {
+			if countMode {
+				output.EmitCount(outputData)
+			} else if jsonOutput {
 				output.EmitJSON(outputData)
 			} else {
 				output.EmitText(outputData, colorOutput)
