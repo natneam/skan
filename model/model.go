@@ -24,15 +24,17 @@ type SearcherArgs struct {
 	Query           string
 	Regex           bool
 	WholeWordsOnly  bool
+	AbsolutePaths   bool
 	Directories     []string
 }
 
 type FindArgs struct {
-	ContextLines ContextLineBuffer
-	Invert       bool
-	File         string
-	Regexp       *regexp.Regexp
-	Output       chan Match
+	ContextLines  ContextLineBuffer
+	Invert        bool
+	AbsolutePaths bool
+	File          string
+	Regexp        *regexp.Regexp
+	Output        chan Match
 }
 
 type LineContext struct {

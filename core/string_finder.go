@@ -55,7 +55,7 @@ func Find(args model.FindArgs) error {
 		match, matchIndexes := regexHandler(lineContext)
 		if match {
 
-			matchedLines = append(matchedLines, model.Match{FileName: args.File, LineNumber: lineNumber, LineText: string(lineContext.CurrentLine), BeforeContext: append([]model.ContextLine{}, beforeBuffer...), MatchIndexes: matchIndexes})
+			matchedLines = append(matchedLines, model.Match{FileName: args.File, LineNumber: lineNumber, LineText: string(lineContext.CurrentLine), BeforeContext: append([]model.ContextLine{}, beforeBuffer...), AfterContext: []model.ContextLine{}, MatchIndexes: matchIndexes})
 
 			// reset buffers
 			beforeBuffer = nil

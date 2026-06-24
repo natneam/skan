@@ -52,11 +52,12 @@ func Searcher(args model.SearcherArgs) (chan model.Match, error) {
 			defer workerWg.Done()
 			for path := range jobs {
 				Find(model.FindArgs{
-					Invert:       args.Invert,
-					Regexp:       regex,
-					ContextLines: model.ContextLineBuffer{Before: args.ContextLines.Before, After: args.ContextLines.After},
-					File:         path,
-					Output:       output,
+					Invert:        args.Invert,
+					Regexp:        regex,
+					ContextLines:  model.ContextLineBuffer{Before: args.ContextLines.Before, After: args.ContextLines.After},
+					File:          path,
+					Output:        output,
+					AbsolutePaths: args.AbsolutePaths,
 				})
 			}
 		}()
@@ -66,7 +67,7 @@ func Searcher(args model.SearcherArgs) (chan model.Match, error) {
 		walkerWg.Add(1)
 		go func() {
 			defer walkerWg.Done()
-			traverse(dir, jobs)
+			traverse(dir, jobs, args.AbsolutePaths)
 		}()
 	}
 
@@ -80,7 +81,7 @@ func Searcher(args model.SearcherArgs) (chan model.Match, error) {
 	return output, nil
 }
 
-func traverse(directory string, jobs chan string) error {
+func traverse(directory string, jobs chan string, absolutePaths bool) error {
 	return filepath.WalkDir(directory, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -93,7 +94,15 @@ func traverse(directory string, jobs chan string) error {
 				return nil
 			}
 
-			jobs <- path
+			if absolutePaths {
+				abs, err := filepath.Abs(path)
+				if err != nil {
+					return nil
+				}
+				jobs <- abs
+			} else {
+				jobs <- path
+			}
 		}
 
 		return nil

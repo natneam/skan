@@ -21,6 +21,7 @@ func Run() error {
 	var colorOutput bool
 	var jsonOutput bool
 	var countMode bool
+	var absolutePaths bool
 
 	cmd := &cli.Command{
 		Name:        "skan",
@@ -92,6 +93,12 @@ func Run() error {
 				Usage:       "Output the number of matches instead of the matching lines",
 				Destination: &countMode,
 			},
+			&cli.BoolFlag{
+				Name:        "absolute",
+				Usage:       "Output absolute paths for matching files",
+				DefaultText: "relative",
+				Destination: &absolutePaths,
+			},
 		},
 		Arguments: []cli.Argument{
 			&cli.StringArgs{
@@ -109,6 +116,7 @@ func Run() error {
 				Invert:          invertResults,
 				Regex:           regexpSearch,
 				WholeWordsOnly:  wholeWordsOnly,
+				AbsolutePaths:   absolutePaths,
 				ContextLines:    contextLinesInput,
 				Directories:     directories,
 			})
