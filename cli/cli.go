@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"os"
+	"runtime"
 
 	"github.com/urfave/cli/v3"
 	"natneam.com/skan/cli/output"
@@ -25,6 +26,7 @@ func Run() error {
 	var include []string
 	var exclude []string
 	var maxSize string
+	var workers int
 
 	cmd := &cli.Command{
 		Name:        "skan",
@@ -117,6 +119,13 @@ func Run() error {
 				Usage:       "Maximum file size to include in the search (e.g. 100MB)",
 				Destination: &maxSize,
 			},
+			&cli.IntFlag{
+				Name:        "workers",
+				Usage:       "Number of workers to use for parallel search",
+				DefaultText: "The number of CPUs",
+				Value:       runtime.NumCPU(),
+				Destination: &workers,
+			},
 		},
 		Arguments: []cli.Argument{
 			&cli.StringArgs{
@@ -140,6 +149,7 @@ func Run() error {
 				Exclude:         exclude,
 				Include:         include,
 				MaxSize:         maxSize,
+				Workers:         workers,
 			})
 
 			if err != nil {

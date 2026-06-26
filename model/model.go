@@ -29,6 +29,7 @@ type SearcherArgs struct {
 	Include         []string
 	Exclude         []string
 	MaxSize         string
+	Workers         int
 }
 
 type FindArgs struct {

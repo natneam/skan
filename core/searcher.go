@@ -1,11 +1,11 @@
 package core
 
 import (
+	"errors"
 	"io/fs"
 	"math"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strings"
 	"sync"
 
@@ -72,7 +72,11 @@ func Searcher(args model.SearcherArgs) (chan model.Match, error) {
 		}
 	}
 
-	for range runtime.NumCPU() {
+	if args.Workers <= 0 {
+		return nil, errors.New("workers must be greater than 0")
+	}
+
+	for range args.Workers {
 		workerWg.Add(1)
 		go func() {
 			defer workerWg.Done()
