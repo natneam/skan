@@ -28,6 +28,8 @@ skan [options] DIRECTORIES...
 | `--json` | Output results as newline-delimited JSON (one JSON object per match) |
 | `--include string` | Only include files whose relative path matches the given regex pattern (repeatable) |
 | `--exclude string` | Exclude files and directories whose relative path matches the given regex pattern (repeatable) |
+| `--max-size string` | Only include files whose size is less than or equal to the given size (e.g. "100KB", "2GB") |
+
 
 ## Examples
 

@@ -2,6 +2,7 @@ package core
 
 import (
 	"io/fs"
+	"math"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -62,6 +63,15 @@ func Searcher(args model.SearcherArgs) (chan model.Match, error) {
 		}
 	}
 
+	// Calculate Max Size
+	var maxFileSize int64 = math.MaxInt64
+	if args.MaxSize != "" {
+		maxFileSize, err = utils.ParseSize(args.MaxSize, regexp.MustCompile(`(?i)^(\d+)([KMGT]?)B?$`))
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	for range runtime.NumCPU() {
 		workerWg.Add(1)
 		go func() {
@@ -83,7 +93,7 @@ func Searcher(args model.SearcherArgs) (chan model.Match, error) {
 		walkerWg.Add(1)
 		go func() {
 			defer walkerWg.Done()
-			traverse(dir, jobs, includeRegex, excludeRegex, args.AbsolutePaths)
+			traverse(dir, jobs, includeRegex, excludeRegex, args.AbsolutePaths, maxFileSize)
 		}()
 	}
 
@@ -97,7 +107,7 @@ func Searcher(args model.SearcherArgs) (chan model.Match, error) {
 	return output, nil
 }
 
-func traverse(directory string, jobs chan string, includeRegex, excludeRegex *regexp.Regexp, absolutePaths bool) error {
+func traverse(directory string, jobs chan string, includeRegex, excludeRegex *regexp.Regexp, absolutePaths bool, maxSize int64) error {
 	return filepath.WalkDir(directory, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -124,6 +134,12 @@ func traverse(directory string, jobs chan string, includeRegex, excludeRegex *re
 				// read the first 512 bytes to see if it's a binary file, if so discard it
 				binary, err := utils.IsBinary(path)
 				if err != nil || binary {
+					return nil
+				}
+
+				// Check max size
+				info, err := d.Info()
+				if err == nil && info.Size() > maxSize {
 					return nil
 				}
 

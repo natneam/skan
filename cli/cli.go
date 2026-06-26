@@ -24,6 +24,7 @@ func Run() error {
 	var absolutePaths bool
 	var include []string
 	var exclude []string
+	var maxSize string
 
 	cmd := &cli.Command{
 		Name:        "skan",
@@ -107,10 +108,14 @@ func Run() error {
 				Destination: &include,
 			},
 			&cli.StringSliceFlag{
-				Name: "exclude",
-
+				Name:        "exclude",
 				Usage:       "Exclude files and directories with relative paths that match the given regex pattern",
 				Destination: &exclude,
+			},
+			&cli.StringFlag{
+				Name:        "max-size",
+				Usage:       "Maximum file size to include in the search (e.g. 100MB)",
+				Destination: &maxSize,
 			},
 		},
 		Arguments: []cli.Argument{
@@ -134,6 +139,7 @@ func Run() error {
 				Directories:     directories,
 				Exclude:         exclude,
 				Include:         include,
+				MaxSize:         maxSize,
 			})
 
 			if err != nil {

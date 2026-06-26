@@ -28,6 +28,7 @@ type SearcherArgs struct {
 	Directories     []string
 	Include         []string
 	Exclude         []string
+	MaxSize         string
 }
 
 type FindArgs struct {

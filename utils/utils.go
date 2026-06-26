@@ -2,9 +2,11 @@ package utils
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -63,4 +65,25 @@ func MatchAny(regexp *regexp.Regexp, str string) bool {
 		return regexp.MatchString(str)
 	}
 	return false
+}
+
+func ParseSize(size string, regex *regexp.Regexp) (int64, error) {
+	matches := regex.FindStringSubmatch(size)
+	if matches == nil {
+		return 0, errors.New("Invalid file size.")
+	}
+	value, unit := matches[1], matches[2]
+	factor := int64(1)
+	switch unit {
+	case "K", "k":
+		factor = 1024
+	case "M", "m":
+		factor = 1024 * 1024
+	case "G", "g":
+		factor = 1024 * 1024 * 1024
+	case "T", "t":
+		factor = 1024 * 1024 * 1024 * 1024
+	}
+	value_b64, _ := strconv.ParseInt(value, 10, 64)
+	return value_b64 * factor, nil
 }
