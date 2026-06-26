@@ -135,7 +135,7 @@ func traverse(directory string, jobs chan string, includeRegex, excludeRegex *re
 				if absolutePaths {
 					jobs <- abs
 				} else {
-					jobs <- path
+					jobs <- rel
 				}
 			}
 		}
