@@ -22,6 +22,8 @@ func Run() error {
 	var jsonOutput bool
 	var countMode bool
 	var absolutePaths bool
+	var include []string
+	var exclude []string
 
 	cmd := &cli.Command{
 		Name:        "skan",
@@ -99,6 +101,17 @@ func Run() error {
 				DefaultText: "relative",
 				Destination: &absolutePaths,
 			},
+			&cli.StringSliceFlag{
+				Name:        "include",
+				Usage:       "Only include files and directories with relative paths that match the given regex pattern",
+				Destination: &include,
+			},
+			&cli.StringSliceFlag{
+				Name: "exclude",
+
+				Usage:       "Exclude files and directories with relative paths that match the given regex pattern",
+				Destination: &exclude,
+			},
 		},
 		Arguments: []cli.Argument{
 			&cli.StringArgs{
@@ -119,6 +132,8 @@ func Run() error {
 				AbsolutePaths:   absolutePaths,
 				ContextLines:    contextLinesInput,
 				Directories:     directories,
+				Exclude:         exclude,
+				Include:         include,
 			})
 
 			if err != nil {

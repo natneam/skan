@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"regexp"
 	"strings"
 )
 
@@ -55,4 +56,11 @@ func HighlightLine(line string, spans [][]int) string {
 
 	buf.WriteString(line[lastIndex:])
 	return buf.String()
+}
+
+func MatchAny(regexp *regexp.Regexp, str string) bool {
+	if regexp != nil {
+		return regexp.MatchString(str)
+	}
+	return false
 }

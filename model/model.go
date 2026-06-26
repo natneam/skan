@@ -26,6 +26,8 @@ type SearcherArgs struct {
 	WholeWordsOnly  bool
 	AbsolutePaths   bool
 	Directories     []string
+	Include         []string
+	Exclude         []string
 }
 
 type FindArgs struct {

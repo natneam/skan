@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strings"
 	"sync"
 
 	"natneam.com/skan/model"
@@ -46,6 +47,21 @@ func Searcher(args model.SearcherArgs) (chan model.Match, error) {
 		return nil, err
 	}
 
+	includeRegex, err := regexp.Compile("(" + strings.Join(args.Include, "|") + ")")
+	if err != nil {
+		return nil, err
+	}
+
+	var excludeRegex *regexp.Regexp
+	if len(args.Exclude) == 0 {
+		excludeRegex = nil
+	} else {
+		excludeRegex, err = regexp.Compile("(" + strings.Join(args.Exclude, "|") + ")")
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	for range runtime.NumCPU() {
 		workerWg.Add(1)
 		go func() {
@@ -67,7 +83,7 @@ func Searcher(args model.SearcherArgs) (chan model.Match, error) {
 		walkerWg.Add(1)
 		go func() {
 			defer walkerWg.Done()
-			traverse(dir, jobs, args.AbsolutePaths)
+			traverse(dir, jobs, includeRegex, excludeRegex, args.AbsolutePaths)
 		}()
 	}
 
@@ -81,27 +97,46 @@ func Searcher(args model.SearcherArgs) (chan model.Match, error) {
 	return output, nil
 }
 
-func traverse(directory string, jobs chan string, absolutePaths bool) error {
+func traverse(directory string, jobs chan string, includeRegex, excludeRegex *regexp.Regexp, absolutePaths bool) error {
 	return filepath.WalkDir(directory, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
-		if !d.IsDir() {
-			// read the first 512 bytes to see if it's a binary file, if so discard it
-			binary, err := utils.IsBinary(path)
-			if err != nil || binary {
+		rel, err := filepath.Rel(directory, path)
+		if err != nil {
+			return nil
+		}
+
+		// Match exclude
+		if excludeRegex != nil {
+			if utils.MatchAny(excludeRegex, rel) {
+				if d.IsDir() {
+					return filepath.SkipDir
+				}
 				return nil
 			}
+		}
 
-			if absolutePaths {
+		if !d.IsDir() {
+			// Match include
+			if includeRegex != nil && utils.MatchAny(includeRegex, rel) {
+				// read the first 512 bytes to see if it's a binary file, if so discard it
+				binary, err := utils.IsBinary(path)
+				if err != nil || binary {
+					return nil
+				}
+
 				abs, err := filepath.Abs(path)
 				if err != nil {
 					return nil
 				}
-				jobs <- abs
-			} else {
-				jobs <- path
+
+				if absolutePaths {
+					jobs <- abs
+				} else {
+					jobs <- path
+				}
 			}
 		}
 
