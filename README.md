@@ -26,6 +26,8 @@ skan [options] DIRECTORIES...
 | `-C int` | Print `N` lines of context before and after matching lines (default: 0) |
 | `--color` | Colorize matching text in text output, doesn't affect JSON output |
 | `--json` | Output results as newline-delimited JSON (one JSON object per match) |
+| `--include string` | Only include files whose relative path matches the given regex pattern (repeatable) |
+| `--exclude string` | Exclude files and directories whose relative path matches the given regex pattern (repeatable) |
 
 ## Examples
 
@@ -47,4 +49,19 @@ skan -q "^func " -r ./pkg
 Inverted, case-insensitive search (find lines that do *not* contain "debug"):
 ```bash
 skan -q "debug" -v -i ./src
+```
+
+Search only Go files:
+```bash
+skan -q "TODO" --include "\.go$" ./src
+```
+
+Exclude test files and the vendor directory:
+```bash
+skan -q "TODO" --exclude "_test\.go$" --exclude "^vendor" ./
+```
+
+Combine include and exclude (only Go files, skip generated code):
+```bash
+skan -q "error" --include "\.go$" --exclude "^vendor" --exclude "\.pb\.go$" ./
 ```
