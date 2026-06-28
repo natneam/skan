@@ -31,6 +31,11 @@ func Searcher(args model.SearcherArgs) (chan model.Match, error) {
 		args.ContextLines.After = args.ContextLines.Context
 	}
 
+	if args.Depth == nil {
+		depth := -1
+		args.Depth = &depth
+	}
+
 	query := []byte(args.Query)
 
 	// Preprocess the Query
@@ -100,7 +105,7 @@ func Searcher(args model.SearcherArgs) (chan model.Match, error) {
 		walkerWg.Add(1)
 		go func() {
 			defer walkerWg.Done()
-			traverse(dir, jobs, includeRegex, excludeRegex, args.AbsolutePaths, maxFileSize)
+			traverse(dir, jobs, includeRegex, excludeRegex, args.AbsolutePaths, maxFileSize, *args.Depth)
 		}()
 	}
 
@@ -114,7 +119,7 @@ func Searcher(args model.SearcherArgs) (chan model.Match, error) {
 	return output, nil
 }
 
-func traverse(directory string, jobs chan string, includeRegex, excludeRegex *regexp.Regexp, absolutePaths bool, maxSize int64) error {
+func traverse(directory string, jobs chan string, includeRegex, excludeRegex *regexp.Regexp, absolutePaths bool, maxSize int64, depth int) error {
 	return filepath.WalkDir(directory, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -123,6 +128,17 @@ func traverse(directory string, jobs chan string, includeRegex, excludeRegex *re
 		rel, err := filepath.Rel(directory, path)
 		if err != nil {
 			return nil
+		}
+
+		// Depth check
+		dpt := strings.Count(rel, string(filepath.Separator))
+		if depth >= 0 {
+			if d.IsDir() && rel != "." && dpt >= depth {
+				return filepath.SkipDir
+			}
+			if !d.IsDir() && dpt > depth {
+				return nil
+			}
 		}
 
 		// Match exclude

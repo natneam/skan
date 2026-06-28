@@ -30,6 +30,7 @@ type SearcherArgs struct {
 	Exclude         []string
 	MaxSize         string
 	Workers         int
+	Depth           *int
 }
 
 type FindArgs struct {

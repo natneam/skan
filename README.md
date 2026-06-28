@@ -30,7 +30,7 @@ skan [options] DIRECTORIES...
 | `--exclude string` | Exclude files and directories whose relative path matches the given regex pattern (repeatable) |
 | `--max-size string` | Only include files whose size is less than or equal to the given size (e.g. "100KB", "2GB") |
 | `--workers int` | Number of workers to use for parallel search (default: number of CPUs) |
-
+| `--max-depth int` | Maximum depth of directories to scan, negative values are unlimited (default: -1) |
 
 
 ## Examples

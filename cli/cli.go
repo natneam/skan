@@ -27,6 +27,7 @@ func Run() error {
 	var exclude []string
 	var maxSize string
 	var workers int
+	var depth int
 
 	cmd := &cli.Command{
 		Name:        "skan",
@@ -126,6 +127,13 @@ func Run() error {
 				Value:       runtime.NumCPU(),
 				Destination: &workers,
 			},
+			&cli.IntFlag{
+				Name:        "max-depth",
+				Usage:       "Maximum depth of directories to scan, negative values are unlimited",
+				DefaultText: "-1 (unlimited)",
+				Value:       -1,
+				Destination: &depth,
+			},
 		},
 		Arguments: []cli.Argument{
 			&cli.StringArgs{
@@ -150,6 +158,7 @@ func Run() error {
 				Include:         include,
 				MaxSize:         maxSize,
 				Workers:         workers,
+				Depth:           &depth,
 			})
 
 			if err != nil {
