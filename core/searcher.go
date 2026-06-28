@@ -48,9 +48,12 @@ func Searcher(args model.SearcherArgs) (chan model.Match, error) {
 		return nil, err
 	}
 
-	includeRegex, err := regexp.Compile("(" + strings.Join(args.Include, "|") + ")")
-	if err != nil {
-		return nil, err
+	var includeRegex *regexp.Regexp
+	if len(args.Include) != 0 {
+		includeRegex, err = regexp.Compile("(" + strings.Join(args.Include, "|") + ")")
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var excludeRegex *regexp.Regexp
@@ -134,7 +137,7 @@ func traverse(directory string, jobs chan string, includeRegex, excludeRegex *re
 
 		if !d.IsDir() {
 			// Match include
-			if includeRegex != nil && utils.MatchAny(includeRegex, rel) {
+			if includeRegex == nil || utils.MatchAny(includeRegex, rel) {
 				// read the first 512 bytes to see if it's a binary file, if so discard it
 				binary, err := utils.IsBinary(path)
 				if err != nil || binary {
