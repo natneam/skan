@@ -58,35 +58,34 @@ func Find(args model.FindArgs) error {
 		}
 
 		match, matchIndexes := regexHandler(lineContext)
+		lineText := string(lineContext.CurrentLine)
 		if match {
 
-			matchedLines = append(matchedLines, model.Match{FileName: fileDisplayName, LineNumber: lineNumber, LineText: string(lineContext.CurrentLine), BeforeContext: append([]model.ContextLine{}, beforeBuffer...), AfterContext: []model.ContextLine{}, MatchIndexes: matchIndexes})
+			matchedLines = append(matchedLines, model.Match{FileName: fileDisplayName, LineNumber: lineNumber, LineText: lineText, BeforeContext: append([]model.ContextLine{}, beforeBuffer...), AfterContext: []model.ContextLine{}, MatchIndexes: matchIndexes})
 
-			// reset buffers
-			beforeBuffer = nil
+		}
 
-		} else {
-			lineText := string(lineContext.CurrentLine)
-			remove := 0
+		remove := 0
 
-			for i := range matchedLines {
-				if len(matchedLines[i].AfterContext) < args.ContextLines.After {
+		for i := range matchedLines {
+			if len(matchedLines[i].AfterContext) < args.ContextLines.After {
+				if !(match && i == len(matchedLines)-1) {
 					matchedLines[i].AfterContext = append(matchedLines[i].AfterContext, model.ContextLine{FileName: fileDisplayName, LineNumber: lineNumber, LineText: lineText})
 				}
-
-				if len(matchedLines[i].AfterContext) == args.ContextLines.After {
-					args.Output <- matchedLines[i]
-					remove++
-				}
 			}
 
-			matchedLines = matchedLines[remove:]
-
-			// Record before context
-			beforeBuffer = append(beforeBuffer, model.ContextLine{FileName: fileDisplayName, LineNumber: lineNumber, LineText: lineText})
-			if len(beforeBuffer) > args.ContextLines.Before {
-				beforeBuffer = beforeBuffer[1:]
+			if len(matchedLines[i].AfterContext) == args.ContextLines.After {
+				args.Output <- matchedLines[i]
+				remove++
 			}
+		}
+
+		matchedLines = matchedLines[remove:]
+
+		// Record before context
+		beforeBuffer = append(beforeBuffer, model.ContextLine{FileName: fileDisplayName, LineNumber: lineNumber, LineText: lineText})
+		if len(beforeBuffer) > args.ContextLines.Before {
+			beforeBuffer = beforeBuffer[1:]
 		}
 
 		lineNumber++

@@ -49,7 +49,7 @@ func Searcher(args model.SearcherArgs) error {
 		query = []byte(regexp.QuoteMeta(string(query)))
 	}
 	if args.WholeWordsOnly {
-		query = []byte("\\b" + string(query) + "\\b")
+		query = []byte("\\b(?:" + string(query) + ")\\b")
 	}
 	if args.CaseInsensitive {
 		query = []byte("(?i)" + string(query))
