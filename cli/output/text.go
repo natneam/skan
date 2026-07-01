@@ -2,6 +2,7 @@ package output
 
 import (
 	"fmt"
+	"os"
 
 	"natneam.com/skan/model"
 	"natneam.com/skan/utils"
@@ -30,5 +31,19 @@ func EmitText(data chan model.Match, colorOutput bool) {
 		countMatches++
 		filesCount[res.FileName] = true
 	}
+	if countMatches == 0 {
+		return
+	}
 	fmt.Printf("%d Matches across %d files\n", countMatches, len(filesCount))
+}
+
+func EmitErrorInfo(errorCount int, errOutputFile string) {
+	if errorCount == 0 {
+		return
+	}
+	if errOutputFile != "" {
+		fmt.Fprintf(os.Stderr, "Encountered %d errors, written to %s\n", errorCount, errOutputFile)
+	} else {
+		fmt.Fprintf(os.Stderr, "Encountered %d errors\n", errorCount)
+	}
 }

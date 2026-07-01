@@ -28,12 +28,17 @@ func regexHandler(ctx *model.LineContext) (bool, [][]int) {
 }
 
 func Find(args model.FindArgs) error {
-	f, err := os.Open(args.File)
+	f, err := os.Open(args.Job.AbsolutePath)
 	if err != nil {
 		return err
 	}
 
 	defer f.Close()
+
+	fileDisplayName := args.Job.RelativePath
+	if !args.Job.IsRelative {
+		fileDisplayName = args.Job.AbsolutePath
+	}
 
 	// Buffering Variables
 	var beforeBuffer []model.ContextLine
@@ -55,7 +60,7 @@ func Find(args model.FindArgs) error {
 		match, matchIndexes := regexHandler(lineContext)
 		if match {
 
-			matchedLines = append(matchedLines, model.Match{FileName: args.File, LineNumber: lineNumber, LineText: string(lineContext.CurrentLine), BeforeContext: append([]model.ContextLine{}, beforeBuffer...), AfterContext: []model.ContextLine{}, MatchIndexes: matchIndexes})
+			matchedLines = append(matchedLines, model.Match{FileName: fileDisplayName, LineNumber: lineNumber, LineText: string(lineContext.CurrentLine), BeforeContext: append([]model.ContextLine{}, beforeBuffer...), AfterContext: []model.ContextLine{}, MatchIndexes: matchIndexes})
 
 			// reset buffers
 			beforeBuffer = nil
@@ -66,7 +71,7 @@ func Find(args model.FindArgs) error {
 
 			for i := range matchedLines {
 				if len(matchedLines[i].AfterContext) < args.ContextLines.After {
-					matchedLines[i].AfterContext = append(matchedLines[i].AfterContext, model.ContextLine{FileName: args.File, LineNumber: lineNumber, LineText: lineText})
+					matchedLines[i].AfterContext = append(matchedLines[i].AfterContext, model.ContextLine{FileName: fileDisplayName, LineNumber: lineNumber, LineText: lineText})
 				}
 
 				if len(matchedLines[i].AfterContext) == args.ContextLines.After {
@@ -78,7 +83,7 @@ func Find(args model.FindArgs) error {
 			matchedLines = matchedLines[remove:]
 
 			// Record before context
-			beforeBuffer = append(beforeBuffer, model.ContextLine{FileName: args.File, LineNumber: lineNumber, LineText: lineText})
+			beforeBuffer = append(beforeBuffer, model.ContextLine{FileName: fileDisplayName, LineNumber: lineNumber, LineText: lineText})
 			if len(beforeBuffer) > args.ContextLines.Before {
 				beforeBuffer = beforeBuffer[1:]
 			}

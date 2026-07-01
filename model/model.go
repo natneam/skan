@@ -17,6 +17,12 @@ type ContextLine struct {
 	LineText   string `json:"line_text"`
 }
 
+type Job struct {
+	RelativePath string
+	AbsolutePath string
+	IsRelative   bool
+}
+
 type SearcherArgs struct {
 	CaseInsensitive bool
 	ContextLines    ContextLineBuffer
@@ -31,15 +37,16 @@ type SearcherArgs struct {
 	MaxSize         string
 	Workers         int
 	Depth           *int
+	OutputChan      chan Match
+	ErrorChan       chan error
 }
 
 type FindArgs struct {
-	ContextLines  ContextLineBuffer
-	Invert        bool
-	AbsolutePaths bool
-	File          string
-	Regexp        *regexp.Regexp
-	Output        chan Match
+	ContextLines ContextLineBuffer
+	Invert       bool
+	Job          Job
+	Regexp       *regexp.Regexp
+	Output       chan Match
 }
 
 type LineContext struct {

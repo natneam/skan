@@ -5,9 +5,11 @@ import (
 	"errors"
 	"io"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -84,6 +86,49 @@ func ParseSize(size string, regex *regexp.Regexp) (int64, error) {
 	case "T", "t":
 		factor = 1024 * 1024 * 1024 * 1024
 	}
-	value_b64, _ := strconv.ParseInt(value, 10, 64)
+	value_b64, err := strconv.ParseInt(value, 10, 64)
+
+	if err != nil {
+		return 0, err
+	}
+
 	return value_b64 * factor, nil
+}
+
+func getHomeDir() (string, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return homeDir, nil
+}
+
+func createRootDir(path string) error {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return os.MkdirAll(path, 0755)
+	}
+	return nil
+}
+
+func CreateLogFile(path string) (string, *os.File, error) {
+	if path == "" {
+		// use the default log path
+		homeDir, err := getHomeDir()
+		if err != nil {
+			return "", nil, err
+		}
+		path = filepath.Join(homeDir, ".skan", "errors")
+	}
+
+	err := createRootDir(path)
+	if err != nil {
+		return "", nil, err
+	}
+
+	logPath := filepath.Join(path, "skan_"+time.Now().Format("2006-01-02_15-04-05")+".log")
+	outputFile, err := os.Create(logPath)
+	if err != nil {
+		return "", nil, err
+	}
+	return logPath, outputFile, nil
 }

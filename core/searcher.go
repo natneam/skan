@@ -2,6 +2,7 @@ package core
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"math"
 	"path/filepath"
@@ -13,12 +14,17 @@ import (
 	"natneam.com/skan/utils"
 )
 
-func Searcher(args model.SearcherArgs) (chan model.Match, error) {
-	output := make(chan model.Match, 100)
-	jobs := make(chan string, 100)
+func Searcher(args model.SearcherArgs) error {
+	jobs := make(chan model.Job, 100)
+	var walkerWg, workerWg sync.WaitGroup
 
-	var walkerWg sync.WaitGroup
-	var workerWg sync.WaitGroup
+	defer func() {
+		walkerWg.Wait()
+		close(jobs)
+		workerWg.Wait()
+		close(args.OutputChan)
+		close(args.ErrorChan)
+	}()
 
 	if args.ContextLines.Context == -1 {
 		args.ContextLines.Context = 0
@@ -50,14 +56,14 @@ func Searcher(args model.SearcherArgs) (chan model.Match, error) {
 	}
 	regex, err := regexp.Compile(string(query))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	var includeRegex *regexp.Regexp
 	if len(args.Include) != 0 {
 		includeRegex, err = regexp.Compile("(" + strings.Join(args.Include, "|") + ")")
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
@@ -67,7 +73,7 @@ func Searcher(args model.SearcherArgs) (chan model.Match, error) {
 	} else {
 		excludeRegex, err = regexp.Compile("(" + strings.Join(args.Exclude, "|") + ")")
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
@@ -76,27 +82,34 @@ func Searcher(args model.SearcherArgs) (chan model.Match, error) {
 	if args.MaxSize != "" {
 		maxFileSize, err = utils.ParseSize(args.MaxSize, regexp.MustCompile(`(?i)^(\d+)([KMGT]?)B?$`))
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
 	if args.Workers <= 0 {
-		return nil, errors.New("workers must be greater than 0")
+		return errors.New("workers must be greater than 0")
 	}
 
 	for range args.Workers {
 		workerWg.Add(1)
 		go func() {
 			defer workerWg.Done()
-			for path := range jobs {
-				Find(model.FindArgs{
-					Invert:        args.Invert,
-					Regexp:        regex,
-					ContextLines:  model.ContextLineBuffer{Before: args.ContextLines.Before, After: args.ContextLines.After},
-					File:          path,
-					Output:        output,
-					AbsolutePaths: args.AbsolutePaths,
+			for job := range jobs {
+				err := Find(model.FindArgs{
+					Invert:       args.Invert,
+					Regexp:       regex,
+					ContextLines: model.ContextLineBuffer{Before: args.ContextLines.Before, After: args.ContextLines.After},
+					Job:          job,
+					Output:       args.OutputChan,
 				})
+
+				if err != nil {
+					if args.AbsolutePaths {
+						args.ErrorChan <- fmt.Errorf("[%s] %s", job.AbsolutePath, err)
+					} else {
+						args.ErrorChan <- fmt.Errorf("[%s] %s", job.RelativePath, err)
+					}
+				}
 			}
 		}()
 	}
@@ -105,29 +118,41 @@ func Searcher(args model.SearcherArgs) (chan model.Match, error) {
 		walkerWg.Add(1)
 		go func() {
 			defer walkerWg.Done()
-			traverse(dir, jobs, includeRegex, excludeRegex, args.AbsolutePaths, maxFileSize, *args.Depth)
+			traverse(dir, jobs, includeRegex, excludeRegex, args.AbsolutePaths, maxFileSize, *args.Depth, args.ErrorChan)
 		}()
 	}
 
-	go func() {
-		walkerWg.Wait()
-		close(jobs)
-		workerWg.Wait()
-		close(output)
-	}()
-
-	return output, nil
+	return nil
 }
 
-func traverse(directory string, jobs chan string, includeRegex, excludeRegex *regexp.Regexp, absolutePaths bool, maxSize int64, depth int) error {
-	return filepath.WalkDir(directory, func(path string, d fs.DirEntry, err error) error {
+func traverse(directory string, jobs chan model.Job, includeRegex, excludeRegex *regexp.Regexp, absolutePaths bool, maxSize int64, depth int, errChan chan error) {
+	filepath.WalkDir(directory, func(path string, d fs.DirEntry, err error) error {
+
 		if err != nil {
-			return err
+			errChan <- fmt.Errorf("[%s] %w", path, err)
+			return nil
 		}
 
 		rel, err := filepath.Rel(directory, path)
 		if err != nil {
+			errChan <- fmt.Errorf("[%s] %w", path, err)
 			return nil
+		}
+
+		abs, err := filepath.Abs(path)
+		if err != nil {
+			errChan <- fmt.Errorf("[%s] %w", path, err)
+			return nil
+		}
+
+		// File Output
+		fileOutput := rel
+		if fileOutput == "." {
+			fileOutput = path
+		}
+
+		if absolutePaths {
+			fileOutput = abs
 		}
 
 		// Depth check
@@ -155,26 +180,31 @@ func traverse(directory string, jobs chan string, includeRegex, excludeRegex *re
 			// Match include
 			if includeRegex == nil || utils.MatchAny(includeRegex, rel) {
 				// read the first 512 bytes to see if it's a binary file, if so discard it
-				binary, err := utils.IsBinary(path)
-				if err != nil || binary {
+				binary, err := utils.IsBinary(abs)
+				if err != nil {
+					errChan <- fmt.Errorf("[%s] %w", fileOutput, err)
+					return nil
+				}
+
+				if binary {
 					return nil
 				}
 
 				// Check max size
 				info, err := d.Info()
-				if err == nil && info.Size() > maxSize {
+				if err != nil {
+					errChan <- fmt.Errorf("[%s] %w", fileOutput, err)
 					return nil
 				}
 
-				abs, err := filepath.Abs(path)
-				if err != nil {
+				if info.Size() > maxSize {
 					return nil
 				}
 
 				if absolutePaths {
-					jobs <- abs
+					jobs <- model.Job{RelativePath: fileOutput, AbsolutePath: abs, IsRelative: false}
 				} else {
-					jobs <- rel
+					jobs <- model.Job{RelativePath: fileOutput, AbsolutePath: abs, IsRelative: true}
 				}
 			}
 		}

@@ -2,13 +2,16 @@ package cli
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"runtime"
+	"sync"
 
 	"github.com/urfave/cli/v3"
 	"natneam.com/skan/cli/output"
 	"natneam.com/skan/core"
 	"natneam.com/skan/model"
+	"natneam.com/skan/utils"
 )
 
 func Run() error {
@@ -145,7 +148,60 @@ func Run() error {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			outputData, err := core.Searcher(model.SearcherArgs{
+			var errChan = make(chan error)
+			var outputChan = make(chan model.Match)
+			var errorCount int
+			var errorOutputfile string
+			var wg sync.WaitGroup
+			var mu = &sync.Mutex{}
+			mu.Lock()
+
+			// Write errors to the local file
+			wg.Add(1)
+			go func() {
+				var fileCreationAttempted bool
+				var outputFile *os.File
+				var err error
+
+				defer wg.Done()
+				defer mu.Unlock()
+
+				for val := range errChan {
+					if !fileCreationAttempted {
+						errorOutputfile, outputFile, err = utils.CreateLogFile("")
+						if err == nil {
+							defer outputFile.Close()
+						}
+						fileCreationAttempted = true
+					}
+
+					if err == nil && val != nil {
+						fmt.Fprintln(outputFile, val)
+					}
+
+					errorCount++
+				}
+			}()
+
+			// Write output to stdout
+			wg.Add(1)
+			go func() {
+				if countMode {
+					output.EmitCount(outputChan)
+				} else if jsonOutput {
+					output.EmitJSON(outputChan)
+				} else {
+					output.EmitText(outputChan, colorOutput)
+				}
+				mu.Lock()
+				if errorCount > 0 {
+					output.EmitErrorInfo(errorCount, errorOutputfile)
+				}
+				mu.Unlock()
+				wg.Done()
+			}()
+
+			err := core.Searcher(model.SearcherArgs{
 				Query:           searchString,
 				CaseInsensitive: caseInsensitive,
 				Invert:          invertResults,
@@ -159,20 +215,12 @@ func Run() error {
 				MaxSize:         maxSize,
 				Workers:         workers,
 				Depth:           &depth,
+				OutputChan:      outputChan,
+				ErrorChan:       errChan,
 			})
 
-			if err != nil {
-				return err
-			}
-
-			if countMode {
-				output.EmitCount(outputData)
-			} else if jsonOutput {
-				output.EmitJSON(outputData)
-			} else {
-				output.EmitText(outputData, colorOutput)
-			}
-			return nil
+			wg.Wait()
+			return err
 		},
 	}
 
