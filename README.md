@@ -26,6 +26,8 @@ skan [options] DIRECTORIES...
 | `-C int` | Print `N` lines of context before and after matching lines (default: 0) |
 | `--color` | Colorize matching text in text output, doesn't affect JSON output |
 | `--json` | Output results as newline-delimited JSON (one JSON object per match) |
+| `--count`, `-c` | Output the number of matches instead of the matching lines |
+| `--absolute` | Output absolute paths for matching files (default: relative) |
 | `--include string` | Only include files whose relative path matches the given regex pattern (repeatable) |
 | `--exclude string` | Exclude files and directories whose relative path matches the given regex pattern (repeatable) |
 | `--max-size string` | Only include files whose size is less than or equal to the given size (e.g. "100KB", "2GB") |
