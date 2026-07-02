@@ -101,6 +101,7 @@ func Searcher(args model.SearcherArgs) error {
 					ContextLines: model.ContextLineBuffer{Before: args.ContextLines.Before, After: args.ContextLines.After},
 					Job:          job,
 					Output:       args.OutputChan,
+					ErrorChan:    args.ErrorChan,
 				})
 
 				if err != nil {

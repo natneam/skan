@@ -47,6 +47,7 @@ type FindArgs struct {
 	Job          Job
 	Regexp       *regexp.Regexp
 	Output       chan Match
+	ErrorChan    chan error
 }
 
 type LineContext struct {

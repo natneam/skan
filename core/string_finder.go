@@ -51,13 +51,27 @@ func Find(args model.FindArgs) error {
 	lineNumber := 0
 
 	for {
-		lineNumber++
 		line, err := reader.ReadBytes('\n')
 
+		// Trim delimiters
+		if len(line) > 0 && line[len(line)-1] == '\n' {
+			line = line[:len(line)-1]
+
+			if len(line) > 0 && line[len(line)-1] == '\r' {
+				line = line[:len(line)-1]
+			}
+		}
+
 		if err != io.EOF && err != nil {
+			args.ErrorChan <- err
 			break
 		}
 
+		if len(line) == 0 && err == io.EOF {
+			break
+		}
+
+		lineNumber++
 		lineContext := &model.LineContext{
 			CurrentLine: line,
 			Args:        args,
