@@ -2,7 +2,7 @@ package core
 
 import (
 	"bufio"
-	"bytes"
+	"io"
 	"os"
 
 	"natneam.com/skan/model"
@@ -47,13 +47,19 @@ func Find(args model.FindArgs) error {
 	var matchedLines []model.Match
 
 	// Read line by line and match
-	scanner := bufio.NewScanner(f)
-	lineNumber := 1
+	reader := bufio.NewReader(f)
+	lineNumber := 0
 
-	for scanner.Scan() {
-		line := scanner.Bytes()
+	for {
+		lineNumber++
+		line, err := reader.ReadBytes('\n')
+
+		if err != io.EOF && err != nil {
+			break
+		}
+
 		lineContext := &model.LineContext{
-			CurrentLine: bytes.Clone(line),
+			CurrentLine: line,
 			Args:        args,
 		}
 
@@ -88,16 +94,15 @@ func Find(args model.FindArgs) error {
 			beforeBuffer = beforeBuffer[1:]
 		}
 
-		lineNumber++
+		if err == io.EOF {
+			break
+		}
+
 	}
 
 	// flush out the matched lines one last time
 	for _, m := range matchedLines {
 		args.Output <- m
-	}
-
-	if scanner.Err() != nil {
-		return scanner.Err()
 	}
 
 	return nil
